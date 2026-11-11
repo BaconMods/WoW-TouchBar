@@ -1,0 +1,191 @@
+<!--
+  WoW Touch Bar - Windows Installer package. One MSI installs everything:
+    - the app (WoWTouchBar.exe) + Start menu entry + "start with Windows" (optional),
+    - the Touch Bar display driver: test mode on, signed on this PC with a one-off certificate, installed,
+    - the WoW addon, copied into World of Warcraft (optional).
+  Uninstall (Settings > Apps) reverses all of it. Secure Boot must be turned off first (Mac side); the MSI checks.
+  Never change UpgradeCode: it is how Windows recognises updates of this product.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="WoW Touch Bar" Manufacturer="BaconMods" Version="$(ProductVersion)"
+           UpgradeCode="FFD17886-3B31-482A-B587-C3E845CB01B3" Scope="perMachine" Compressed="yes">
+    <SummaryInformation Description="WoW Touch Bar - World of Warcraft on the MacBook Pro Touch Bar (Boot Camp)" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of WoW Touch Bar is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="ARPCOMMENTS" Value="Shows World of Warcraft progress on the MacBook Pro Touch Bar under Windows (Boot Camp)." />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <!-- Checks before anything is installed -->
+    <Property Id="SECUREBOOT">
+      <RegistrySearch Id="SecureBootState" Root="HKLM" Key="SYSTEM\CurrentControlSet\Control\SecureBoot\State"
+                      Name="UEFISecureBootEnabled" Type="raw" Bitness="always64" />
+    </Property>
+    <Property Id="SYSMANUFACTURER">
+      <RegistrySearch Id="BiosMaker" Root="HKLM" Key="HARDWARE\DESCRIPTION\System\BIOS"
+                      Name="SystemManufacturer" Type="raw" Bitness="always64" />
+    </Property>
+    <Launch Condition="Installed OR VersionNT64" Message="WoW Touch Bar needs 64-bit Windows." />
+    <Launch Condition="Installed OR SYSMANUFACTURER = &quot;Apple Inc.&quot;"
+            Message="WoW Touch Bar is for an Intel MacBook Pro with Touch Bar running Windows through Boot Camp. This PC isn't a Mac, so setup will close." />
+    <!-- With the wizard, the "Before you install" page explains Secure Boot and keeps Next greyed out until it is off.
+         Without the wizard (silent install), refuse straight away. -->
+    <Launch Condition="Installed OR SECUREBOOT &lt;&gt; &quot;#1&quot; OR UILevel = 5"
+            Message="Secure Boot is on. The Touch Bar driver can only load with Secure Boot off. Turn it off first on the Mac side (restart holding Command + R, Utilities > Startup Security Utility > No Security), then run setup again. Details: docs\TOUCH_BAR_DRIVER.md." />
+
+    <!-- Test mode as Windows started this time (setup turns it on itself if it is off) -->
+    <Property Id="STARTOPTIONS">
+      <RegistrySearch Id="StartOptions" Root="HKLM" Key="SYSTEM\CurrentControlSet\Control"
+                      Name="SystemStartOptions" Type="raw" Bitness="always64" />
+    </Property>
+
+    <!-- WoW folder for the addon; change with: msiexec /i WoWTouchBar.msi WOWROOT="D:\Games\World of Warcraft" -->
+    <!-- Remembered at install (AddonMarker), so uninstall removes the addon from the same folder -->
+    <Property Id="WOWROOT" Secure="yes">
+      <RegistrySearch Id="SavedWowRoot" Root="HKLM" Key="SOFTWARE\WoW Touch Bar\Installer" Name="WowRoot" Type="raw" Bitness="always64" />
+    </Property>
+    <SetProperty Id="WOWROOT" Value="[ProgramFilesFolder]World of Warcraft" After="CostFinalize" Condition="NOT WOWROOT" Sequence="both" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="WoW Touch Bar" />
+    </StandardDirectory>
+
+    <!-- Wizard: welcome, BEFORE YOU INSTALL (Secure Boot / test mode), licence, choose parts, install, finish -->
+    <ui:WixUI Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(StageDir)\LICENSE.rtf" />
+    <UI>
+      <!-- A failed setup step: say what failed and where the log is, instead of Windows' generic "a program did not finish" -->
+      <Error Id="1722" Message="Setting up the Touch Bar driver failed, so nothing was installed. The reason is in C:\Windows\Logs\WoW Touch Bar\driver-setup.log. Common causes: Secure Boot is still on, or this Mac has no Touch Bar." />
+      <!-- Insert the check page between Welcome and Licence (a higher Order wins over the standard step) -->
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="PreSetupDlg" Order="9" Condition="NOT Installed" />
+      <Publish Dialog="LicenseAgreementDlg" Control="Back" Event="NewDialog" Value="PreSetupDlg" Order="9" />
+      <Publish Dialog="PreSetupDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
+      <Publish Dialog="PreSetupDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg" Condition="SECUREBOOT &lt;&gt; &quot;#1&quot;" />
+      <Publish Dialog="PreSetupDlg" Control="Cancel" Event="SpawnDialog" Value="CancelDlg" />
+
+      <Dialog Id="PreSetupDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="!(loc.CustomizeDlgBannerBitmap)" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Before you install" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes"
+                 Text="The Touch Bar driver needs two Windows security settings changed." />
+
+        <!-- Secure Boot -->
+        <Control Id="SbLabel" Type="Text" X="20" Y="56" Width="330" Height="12" NoPrefix="yes" Text="{\WixUI_Font_Title}1. Secure Boot must be off" />
+        <Control Id="SbOk" Type="Text" X="30" Y="72" Width="320" Height="24" NoPrefix="yes" HideCondition="SECUREBOOT = &quot;#1&quot;"
+                 Text="OK - Secure Boot is off." />
+        <Control Id="SbOn" Type="Text" X="30" Y="72" Width="320" Height="92" NoPrefix="yes" HideCondition="SECUREBOOT &lt;&gt; &quot;#1&quot;"
+                 Text="Secure Boot is ON, so setup can't continue yet. Windows can't change this for you; it's a Mac setting:&#xD;&#xA;1. Close setup. Start > Power > Restart.&#xD;&#xA;2. When the screen goes black, hold Command + R until the Apple logo appears.&#xD;&#xA;3. Menu bar: Utilities > Startup Security Utility > Secure Boot: No Security.&#xD;&#xA;4. Apple menu > Startup Disk > Boot Camp Windows > Restart.&#xD;&#xA;5. Run this setup again." />
+
+        <!-- Test mode -->
+        <Control Id="TmLabel" Type="Text" X="20" Y="172" Width="330" Height="12" NoPrefix="yes" Text="{\WixUI_Font_Title}2. Windows test mode must be on" />
+        <Control Id="TmOk" Type="Text" X="30" Y="188" Width="320" Height="24" NoPrefix="yes" HideCondition="NOT (STARTOPTIONS &gt;&lt; &quot;TESTSIGNING&quot;)"
+                 Text="OK - test mode is on." />
+        <Control Id="TmOff" Type="Text" X="30" Y="188" Width="320" Height="36" NoPrefix="yes" HideCondition="STARTOPTIONS &gt;&lt; &quot;TESTSIGNING&quot;"
+                 Text="Test mode is off. Setup turns it on for you; it starts after the restart at the end. Windows then shows &quot;Test Mode&quot; in the corner of the desktop. Uninstalling turns it off again." />
+
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)"
+                 DisableCondition="SECUREBOOT = &quot;#1&quot;" />
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)" />
+      </Dialog>
+    </UI>
+
+    <Feature Id="Main" Title="WoW Touch Bar app and Touch Bar driver" Level="1" AllowAbsent="no" Display="expand"
+             Description="The app (tray icon) and the Touch Bar display driver. Turns on Windows test mode and asks for a restart.">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="MainExe" />
+      <ComponentRef Id="StartMenu" />
+      <ComponentRef Id="CleanupFiles" />
+    </Feature>
+    <Feature Id="Addon" Title="WoW addon" Level="1"
+             Description="Copies the WoW Touch Bar addon into World of Warcraft (C:\Program Files (x86)\World of Warcraft, WoW: Forever and Retail).">
+      <ComponentRef Id="AddonMarker" />
+    </Feature>
+    <Feature Id="Autostart" Title="Start with Windows" Level="1" Description="Start the app when you sign in to Windows.">
+      <ComponentRef Id="AutostartRun" />
+    </Feature>
+
+    <!-- Close a running copy before files are replaced or removed (it has no window, so it is ended). -->
+    <util:CloseApplication Id="CloseApp" Target="WoWTouchBar.exe" CloseMessage="no" TerminateProcess="1" RebootPrompt="no" />
+
+    <!-- Custom actions: PowerShell scripts installed with the app, run as SYSTEM, output into the MSI log -->
+    <SetProperty Id="SetupDriver" Sequence="execute" Before="SetupDriver"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\Setup-TouchBarDriver.ps1&quot;" />
+    <CustomAction Id="SetupDriver" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="check" />
+
+    <SetProperty Id="RollbackDriver" Sequence="execute" Before="RollbackDriver"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\Remove-TouchBarDriver.ps1&quot; -Rollback" />
+    <CustomAction Id="RollbackDriver" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec" Execute="rollback" Impersonate="no" Return="ignore" />
+
+    <SetProperty Id="RemoveDriver" Sequence="execute" Before="RemoveDriver"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\Remove-TouchBarDriver.ps1&quot;" />
+    <CustomAction Id="RemoveDriver" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <SetProperty Id="InstallAddon" Sequence="execute" Before="InstallAddon"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\Install-Addon.ps1&quot; -Source &quot;[INSTALLFOLDER]addon\WoWTouchBar&quot; -WowRoot &quot;[WOWROOT]&quot;" />
+    <!-- As the installing user, not SYSTEM: the WoW folder is writable by every user anyway, and SYSTEM must never work in it -->
+    <CustomAction Id="InstallAddon" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec" Execute="deferred" Impersonate="yes" Return="ignore" />
+
+    <SetProperty Id="RemoveAddon" Sequence="execute" Before="RemoveAddon"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\Install-Addon.ps1&quot; -Uninstall -WowRoot &quot;[WOWROOT]&quot;" />
+    <CustomAction Id="RemoveAddon" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec" Execute="deferred" Impersonate="yes" Return="ignore" />
+
+    <!-- An older per-user copy (earlier PowerShell installer) would also start at sign-in: remove it, as the user -->
+    <SetProperty Id="RemoveOldUserInstall" Sequence="execute" Before="RemoveOldUserInstall"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\Remove-OldUserInstall.ps1&quot;" />
+    <CustomAction Id="RemoveOldUserInstall" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec" Execute="deferred" Impersonate="yes" Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RollbackDriver" Before="SetupDriver" Condition="NOT Installed" />
+      <Custom Action="SetupDriver" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="RemoveOldUserInstall" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="InstallAddon" After="SetupDriver" Condition="NOT Installed AND (&amp;Addon = 3)" />
+      <Custom Action="RemoveAddon" Before="RemoveFiles" Condition="REMOVE ~= &quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="RemoveDriver" After="RemoveAddon" Condition="REMOVE ~= &quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <!-- The driver and test mode only change at the next start: Windows asks to restart at the end -->
+      <ScheduleReboot After="InstallFinalize" Condition="NOT Installed OR (REMOVE ~= &quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE)" />
+    </InstallExecuteSequence>
+  </Package>
+
+  <Fragment>
+    <!-- Everything staged by Build-Release.ps1 except the exe (which has its own component with the shortcut) -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(StageDir)\**">
+        <Exclude Files="$(StageDir)\WoWTouchBar.exe" />
+        <Exclude Files="$(StageDir)\LICENSE.rtf" />
+      </Files>
+    </ComponentGroup>
+
+    <Component Id="MainExe" Directory="INSTALLFOLDER">
+      <File Id="WoWTouchBarExe" Source="$(StageDir)\WoWTouchBar.exe" KeyPath="yes" />
+    </Component>
+
+    <!-- Start menu entry (Windows Installer wants it in its own component, keyed by a registry value) -->
+    <Component Id="StartMenu" Directory="ProgramMenuFolder" Guid="3F2A9C61-8B47-4E5D-A0C2-7D9E1B6F4A23">
+      <Shortcut Id="StartMenuShortcut" Name="WoW Touch Bar" Target="[INSTALLFOLDER]WoWTouchBar.exe"
+                WorkingDirectory="INSTALLFOLDER" Description="WoW Touch Bar (tray app)" />
+      <RegistryValue Root="HKMU" Key="SOFTWARE\WoW Touch Bar\Installer" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Marks the install (the driver scripts keep their logs under %windir%\Logs\WoW Touch Bar) -->
+    <Component Id="CleanupFiles" Directory="INSTALLFOLDER" Guid="6B1E7F52-6D0A-4E0D-9C1B-2E7E8C4A1F31">
+      <RegistryValue Root="HKLM" Key="SOFTWARE\WoW Touch Bar\Installer" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="AddonMarker" Directory="INSTALLFOLDER" Guid="0C5E4E7B-58A4-4B6F-8E4B-5B0F2D7E9A10">
+      <RegistryValue Root="HKLM" Key="SOFTWARE\WoW Touch Bar\Installer" Name="Addon" Type="integer" Value="1" KeyPath="yes" />
+      <RegistryValue Root="HKLM" Key="SOFTWARE\WoW Touch Bar\Installer" Name="WowRoot" Type="string" Value="[WOWROOT]" />
+    </Component>
+
+    <Component Id="AutostartRun" Directory="INSTALLFOLDER" Guid="9A3C6D18-27F4-4C2B-A6D5-3E1F0B8C7D42">
+      <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Run" Name="WoWTouchBar"
+                     Type="string" Value="&quot;[INSTALLFOLDER]WoWTouchBar.exe&quot; --autostart" KeyPath="yes" />
+    </Component>
+
+  </Fragment>
+</Wix>

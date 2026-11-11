@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://baconmods.github.io/WoW-TouchBar/sitemap.xml

@@ -1,0 +1,52 @@
+# WoW Touch Bar
+
+> Free, open-source (MIT) tool that shows World of Warcraft information on the Touch Bar of an Intel MacBook Pro (2018-2020, T2 chip) running Windows 10 in Boot Camp. A read-only WoW addon plus a small Windows tray app. No memory reading, no input to the game, no automation, no network use.
+
+## What it shows
+
+- Tracked quest with objective counts and a progress bar
+- Level, XP and rested XP, percentage and XP left to level
+- Watched reputation and standing; dungeon queue timer with your role
+- Bag space, durability and gold on every page
+- Alerts: quest complete, bags full, low durability, level up, new mail, ready check, dungeon ready
+- Optional: whispers, and guild chat lines that mention you (shown only, never saved)
+- Notes (free text; "/wtb note here" adds your map coordinates) and countdown timers ("/wtb timer 10m tea"), added in game or from the tray app; an alert when a timer ends
+- Outside the game: brightness, volume, media keys, now playing, clock, battery, F1-F12 and up to 12 custom buttons (with nothing playing: brightness and volume sliders with down / up buttons)
+- Quick-add shortcut Ctrl+Option+N (Option = Alt), anywhere including in WoW: "buy flasks" adds a note, "10m tea" starts a timer
+- Timer alerts over the whole bar: fireworks, laser, shockwave or a flash in the bar colour (tray > Timer alert)
+- Long text glides across instead of being cut with "..."
+- Not shown: health, buffs or cooldowns in combat (WoW hides them from addons)
+
+## How it works
+
+The addon draws a thin line of coloured dots (about 3 px tall) in the top-left corner of the game window. The app captures only that line, decodes it (with a checksum) and draws pages on the Touch Bar. Addons can't talk to other programs any other way.
+
+## Requirements
+
+- Mac: Intel MacBook Pro with Touch Bar and T2 chip, 2018-2020. Tested on the 13-inch 2020 (MacBookPro16,2). Apple Silicon Macs can't run Boot Camp.
+- Windows 10 22H2 in Boot Camp with Apple's Boot Camp drivers.
+- Game: WoW: Forever and WoW Retail (both tested). WoW Classic versions are untested.
+- Secure Boot set to "No Security" (Startup Security Utility) and Windows test mode, because the open-source Touch Bar display driver (DFRDisplayKm) has no official signature. The installer turns test mode on and signs the driver on the user's PC only.
+- macOS is not supported yet.
+
+## Install and remove
+
+- One Windows installer (.msi) for the app, the addon and the driver: https://github.com/BaconMods/WoW-TouchBar/releases/latest
+- Uninstall from Settings > Apps > WoW Touch Bar, then restart. This removes everything and brings back the normal Touch Bar.
+- Build it yourself instead (own installer, or no installer at all, using the same scripts): https://github.com/BaconMods/WoW-TouchBar/blob/main/docs/BUILDING.md
+
+## Docs
+
+- [Install guide](https://github.com/BaconMods/WoW-TouchBar/blob/main/docs/INSTALL.md)
+- [Touch Bar driver](https://github.com/BaconMods/WoW-TouchBar/blob/main/docs/TOUCH_BAR_DRIVER.md)
+- [Troubleshooting](https://github.com/BaconMods/WoW-TouchBar/blob/main/docs/TROUBLESHOOTING.md)
+- [Known issues](https://github.com/BaconMods/WoW-TouchBar/blob/main/docs/KNOWN_ISSUES.md)
+- [Building it yourself](https://github.com/BaconMods/WoW-TouchBar/blob/main/docs/BUILDING.md)
+- [Safety and privacy](https://github.com/BaconMods/WoW-TouchBar/blob/main/docs/SAFETY_AND_PRIVACY.md)
+- [Source code](https://github.com/BaconMods/WoW-TouchBar)
+
+## Credits
+
+The Touch Bar display driver is DFRDisplayKm by Bingxing Wang (imbushuo), MIT licence: https://github.com/imbushuo/DFRDisplayKm
+
+Not affiliated with or endorsed by Blizzard Entertainment or Apple.

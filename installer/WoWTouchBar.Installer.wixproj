@@ -1,0 +1,20 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!--
+    The WoW Touch Bar MSI (standard Windows Installer package). WiX is only the build tool; the result is a plain .msi.
+    Built by scripts\release\Build-Release.ps1, which passes StageDir (the files to install) and ProductVersion.
+  -->
+  <PropertyGroup>
+    <OutputName>WoWTouchBar</OutputName>
+    <Platform>x64</Platform>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <StageDir Condition="'$(StageDir)' == ''">$(MSBuildThisFileDirectory)..\dist\stage\msi</StageDir>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">0.0.0</ProductVersion>
+    <DefineConstants>StageDir=$(StageDir);ProductVersion=$(ProductVersion)</DefineConstants>
+    <!-- ICE91 / ICE57: false alarms for a per-machine package (ProgramMenuFolder is the all-users Start menu here) -->
+    <SuppressIces>ICE91;ICE57</SuppressIces>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+  </ItemGroup>
+</Project>

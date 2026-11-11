@@ -1,0 +1,37 @@
+﻿# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.user
+*.suo
+
+# .NET
+bin/
+obj/
+*.nupkg
+TestResults/
+*.trx
+
+# Build / release output
+dist/
+out/
+artifacts/
+*.zip
+
+# Logs (may contain machine details)
+*.log
+logs/
+
+# Local config
+.env
+*.local.json
+
+# Third-party source fetched by the build scripts (the Touch Bar driver)
+external/

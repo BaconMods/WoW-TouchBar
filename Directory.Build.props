@@ -1,0 +1,10 @@
+<Project>
+  <!-- One version for everything: the VERSION file at the repo root (also checked against the addon TOCs by tests). -->
+  <PropertyGroup>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim())</Version>
+    <Product>WoW Touch Bar</Product>
+    <Copyright>BaconMods</Copyright>
+    <Company>BaconMods</Company>
+    <Authors>BaconMods</Authors>
+  </PropertyGroup>
+</Project>

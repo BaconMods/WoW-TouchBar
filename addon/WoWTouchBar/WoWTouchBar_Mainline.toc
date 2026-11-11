@@ -1,0 +1,25 @@
+## Interface: 16001, 120105
+## X-Toc: Mainline
+## Title: WoW Touch Bar
+## IconTexture: Interface\AddOns\WoWTouchBar\icon
+## Notes: Shows quest and XP status on the MacBook Pro Touch Bar. Read-only.
+## Author: BaconMods
+## Version: 1.1.0
+## SavedVariables: WoWTouchBarDB
+
+Compat.lua
+Text.lua
+Player.lua
+Quests.lua
+Utility.lua
+Status.lua
+Reputation.lua
+Chat.lua
+Notes.lua
+NotesWindow.lua
+Options.lua
+State.lua
+Protocol.lua
+Transport.lua
+Debug.lua
+Core.lua

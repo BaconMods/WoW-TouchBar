@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="10.0.0" />
+  </ItemGroup>
+
+  <!-- libusb-win32 library (LGPL, unchanged official 1.4.0.2), only once scripts\touchbar\Get-Libusb0.ps1 has fetched it.
+       Without it the app simply skips the libusb0 route. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\out\libusb0\libusb0.dll')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\out\libusb0\libusb0.dll" Link="libusb0.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
